@@ -31,7 +31,7 @@ sudo ifconfig <device> 192.168.1.x netmask 255.255.255.0
 # Go into network and sharing center, new connection, manually, enter ad hoc network name,
 # no authentication, don't automatically start or anything
 netsh wlan set profileparameter name="network_name" connectiontype=ibss
-# Each time, to connect
+# Each time, to connect. ip set command must be run as administrator
 netsh wlan connecct "network_name"
 netsh interface ip set address name=Wi-Fi" source=static addr=192.168.1.x mask=255.255.255.0
 
