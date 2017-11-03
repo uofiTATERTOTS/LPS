@@ -1,0 +1,42 @@
+### Instructions for connecting to Ad-Hoc (IBSS) WiFi networks (decentralized, peer to peer)
+
+### Currently need to start network with Linux, then connect with other computers, though
+### starting an Ad-hoc network is easy enough on Mac
+
+## Linux:
+# Arch can't have NetworkManager started, not sure why yet, need to disable it 
+# and reboot and then run these commands, works immediately for RPI
+
+# RPI <device> is wlan0, Jonathan's Arch is wlp2s0
+sudo iw <device> set type ibss
+# <name> can be anything, <frequency> (MHz) must be center freq of a legal WiFi channel
+# look at list of WLAN channels on Wikipedia for US, example: Channel 6 is 2437 MHz
+sudo iw <device> ibss join <network_name> <frequency>
+# this may be necessary on Arch at least, probably not RPI (try it with wlan0 
+# if there is an error in the next step)
+sudo ip link set wlp2s0 up
+# set ip address and netmask, set x to 1-5 (assuming up to 5 devices connected)
+# not sure what netmask does yet, just use this (same for everyone)
+sudo ifconfig <device> 192.168.1.x netmask 255.255.255.0
+
+## Mac OSX
+# If someone else starts network, just connect like normal network, go into settings
+# advance, manually set ip address and netmask, then that needs to be changed back to dhcp
+
+## Windows 10
+# After connecting and disconnecting, may need to run troubleshooter to connect to 
+# normal networks 
+
+# Needs to be done once for a given network name:
+# Go into network and sharing center, new connection, manually, enter ad hoc network name,
+# no authentication, don't automatically start or anything
+netsh wlan set profileparameter name="network_name" connectiontype=ibss
+# Each time, to connect
+netsh wlan connecct "network_name"
+netsh interface ip set address name=Wi-Fi" source=static addr=192.168.1.x mask=255.255.255.0
+
+# To disconnect
+netsh wlan disconnect
+
+# If need to remove profile
+netsh wlan delete profile name="network_name"
