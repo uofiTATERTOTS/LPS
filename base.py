@@ -164,8 +164,7 @@ def positioning_sequence_base(address, port):
                 fp.write('\n')
 
     if len(nodes) > 0:
-        for jj in range(len(nodes)):
-            base.sendto('begin', nodes[jj])
+        base.sendto('begin', nodes[0])
         print "Sending Begin"
     else:
         print "Failed to begin. Zero nodes connected"

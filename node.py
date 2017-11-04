@@ -60,7 +60,7 @@ def positioning_sequence(base_address, base_port):
         start = time.time()
         while time.time() < start + 100:
             try:
-                data = node.recv(10)
+                data, address = node.recvfrom(10)
             except:
                 pass
             else:
@@ -73,7 +73,8 @@ def positioning_sequence(base_address, base_port):
                     node.sendto(str(int(data)+1), base_address)
                     data = ''
                 elif data == "begin":
-                    print "Received Begin"
+                    print "Received Begin from", address
+                    data = ''
                     break
                 else:
                     node.sendto('e', base_address)
@@ -84,8 +85,14 @@ def positioning_sequence(base_address, base_port):
 
         flight_times = list()
 
+        if len(addresses) > 1 and node_number == '0':
+            for ii in range(len(addresses)-1):
+                node.sendto('begin', (addresses[ii+1], ports[ii+1]))
+                print "Sent Begin to", addresses[ii+1], ports[ii+1]
+
+        
         complete = False
-        flag = 0
+        flag_1 = 0
         start = time.time()
         while time.time() < start + 25:
             if complete == True:
@@ -93,15 +100,13 @@ def positioning_sequence(base_address, base_port):
                 break
             if len(addresses) > 1:
                 if node_number == '0':
-                    for ii in range(len(addresses)-1):
-                        node.sendto('begin', (addresses[ii+1], ports[ii+1]))
                     start_time = time.time()
-                    if flag != 1:
+                    if flag_1 != 1:
                         print "Sent n to", addresses[int(node_number)+1], ports[int(node_number)+1]
                         node.sendto('n', (addresses[int(node_number)+1], ports[int(node_number)+1]))
-                        flag = 1
+                        flag_1 = 1
                     try:
-                        data, address = node.recvfrom(1)
+                        data, address = node.recvfrom(10)
                     except:
                         pass
                     else:
@@ -122,7 +127,7 @@ def positioning_sequence(base_address, base_port):
                             break
                 elif node_number != '0':
                     try:
-                        data, address = node.recvfrom(1)
+                        data, address = node.recvfrom(10)
                     except:
                         pass
                     else:
