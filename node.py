@@ -1,3 +1,6 @@
+'''
+```
+'''
 import socket
 import time
 
@@ -19,7 +22,7 @@ def positioning_sequence(base_address, base_port):
         except:
             pass
         else:
-            print address[0], address[1]
+            print 'Base: \t', address[0]
             node_number = data.split(',')[0]
             data = ""
             break
@@ -73,7 +76,8 @@ def positioning_sequence(base_address, base_port):
                     node.sendto(str(int(data)+1), base_address)
                     data = ''
                 elif data == "begin":
-                    print "Received Begin from", address
+                    print iterations
+                    print "Received Begin from", address, '\n'
                     data = ''
                     break
                 else:
@@ -96,13 +100,13 @@ def positioning_sequence(base_address, base_port):
         start = time.time()
         while time.time() < start + 25:
             if complete == True:
-                print "Complete"
+                print "Completed secondary sequence"
                 break
             if len(addresses) > 1:
                 if node_number == '0':
                     start_time = time.time()
                     if flag_1 != 1:
-                        print "Sent n to", addresses[int(node_number)+1], ports[int(node_number)+1]
+                        print "Sent     n to  ", addresses[int(node_number)+1], ports[int(node_number)+1]
                         node.sendto('n', (addresses[int(node_number)+1], ports[int(node_number)+1]))
                         flag_1 = 1
                     try:
@@ -110,7 +114,7 @@ def positioning_sequence(base_address, base_port):
                     except:
                         pass
                     else:
-                        print "Received", data, "from", address
+                        print "Received", data, "from", address[0], address[1]
                         if data == '0':
                             end_time = time.time()
                             flight_times.append(end_time-start_time)
@@ -118,7 +122,7 @@ def positioning_sequence(base_address, base_port):
                         elif data == 'n':
                             data = ''
                             node.sendto('0', address)
-                            print "Sent 0 to", address
+                            print "Sent     0 to  ", address
                             complete = True
                         else:
                             print "Received", data, "expected '0' or 'n'"
@@ -131,16 +135,21 @@ def positioning_sequence(base_address, base_port):
                     except:
                         pass
                     else:
-                        print "Received", data, "from", address
+                        print "Received", data, "from", address[0], address[1]
                         if int(node_number) == len(addresses) - 1:
                             if data == 'n':
                                 node.sendto('0', (addresses[int(node_number)-1], ports[int(node_number)-1]))
-                                print "Sent 0 to", addresses[int(node_number)-1], ports[int(node_number)-1]
+                                print "Sent     0 to  ", addresses[int(node_number)-1], ports[int(node_number)-1]
+                                start_time = time.time()
                                 node.sendto('n', (addresses[0], ports[0]))
                                 node.sendto('complete', base_address)
-                                print "Sent n to", addresses[0], ports[0]
-                                complete = True
+                                print "Sent     n to  ", addresses[0], ports[0]
                                 data = ''
+                            elif data == '0':
+                                end_time = time.time()
+                                flight_times.append(end_time-start_time)
+                                data = ''
+                                complete = True
                             else:
                                 print "Received", data, "expected 'n'"
                                 print "Error. Quitting..."
@@ -151,12 +160,13 @@ def positioning_sequence(base_address, base_port):
                                 data = ''
                                 if int(node_number) > 0:
                                     node.sendto('0', (addresses[int(node_number)-1], ports[int(node_number)-1]))
-                                    print "Sent 0 to", addresses[int(node_number)-1], ports[int(node_number)-1]
+                                    print "Sent     0 to  ", addresses[int(node_number)-1], ports[int(node_number)-1]
                                     start_time = time.time()
                                     node.sendto('n', (addresses[int(node_number)+1], ports[int(node_number)+1]))
-                                    print "Sent n to", addresses[int(node_number)+1], ports[int(node_number)+1]
+                                    print "Sent     n to  ", addresses[int(node_number)+1], ports[int(node_number)+1]
                             elif data == '0':
                                 end_time = time.time()
+                                flight_times.append(end_time-start_time)
                                 data = ''
                                 complete = True
                             else:
@@ -167,10 +177,18 @@ def positioning_sequence(base_address, base_port):
             else:
                 print "Only one node active"
                 break
-        node.close()
     if 'iterations' in locals():
         print iterations, ' iterations.'
+    
+    if 'flight_times' in locals():
+        for ii in range(len(flight_times)):
+            node.sendto(node_number+','+str(flight_times[ii]), base_address)
+    node.sendto(node_number+',complete', base_address)
+        
     print "Complete"
+    node.close()
     
 positioning_sequence('192.168.137.1', 3010)
-
+'''
+```
+'''; 
