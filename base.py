@@ -7,11 +7,12 @@ import numpy as np
 import netifaces
 from scipy.stats.kde import gaussian_kde
 import matplotlib.pyplot as plt
+from sys import argv
 
 def positioning_sequence_base(address, port, mode = 'c'):
     timeout = 10
 
-    program_start = time.time()
+    program_start = time.clock()
 
     print 'Base: \t', address
             
@@ -23,9 +24,9 @@ def positioning_sequence_base(address, port, mode = 'c'):
     nodes = list()
     node_index = 0
 
-    start = time.time()
+    start = time.clock()
     end = start + timeout
-    while time.time() < end:
+    while time.clock() < end:
         try:
             new_response, new_address = base.recvfrom(1024)
         except:
@@ -63,11 +64,12 @@ def positioning_sequence_base(address, port, mode = 'c'):
     peak_1 = 0
     peak_2 = 1        
     flag = 1
-    time_end = time.time() + 180
-    threshold = 0.1
+    time_end = time.clock() + 60
+    threshold = 0.001
     n = 1000
-    flight_times_1 = np.zeros((n,len(nodes)))
-    flight_times_2 = np.zeros((n,len(nodes)))
+    time_out = False
+    flight_times_1 = np.zeros((n*10,len(nodes)))
+    flight_times_2 = np.zeros((n*10,len(nodes)))
     
     if len(nodes) != 0:
         for ii in range(len(nodes)):
@@ -76,21 +78,24 @@ def positioning_sequence_base(address, port, mode = 'c'):
             iterations = 0
             flight_times_1_filt = list()
             flight_times_2_filt = list()
-            start = time.time()
+            start = time.clock()
             end = start + 10
             print "\nNode ", ii
             if mode == 'converging' or mode == 'c':
                 while abs(peak_1 - peak_2) > threshold:
+                    if time_out == True:
+                        break
                     for kk in range(n):
                         if abs(peak_1 - peak_2) < threshold and iterations > n:
                             print "Converged"
                             break
-                        if time.time() > time_end:
+                        if time.clock() > time_end:
                             print "Timed out in second loop"
+                            time_out = True
                             break
-                        start = time.time()
+                        start = time.clock()
                         base.sendto(str(ii), nodes[ii])
-                        while time.time() < end:
+                        while time.clock() < end:
                             try:
                                 new_response, new_address = base.recvfrom(1)
                             except:
@@ -100,10 +105,10 @@ def positioning_sequence_base(address, port, mode = 'c'):
                                 if iterations % 100 == 0:
                                     print iterations, '\r',
                                 if flag == 1:
-                                    flight_times_1[kk][ii] = time.time()-start
+                                    flight_times_1[kk][ii] = time.clock()-start
                                     flag = 2
                                 elif flag == 2:
-                                    flight_times_2[kk][ii] = time.time()-start
+                                    flight_times_2[kk][ii] = time.clock()-start
                                     flag = 1
                                 break
                         if kk % (n/10) == 0:
@@ -152,16 +157,25 @@ def positioning_sequence_base(address, port, mode = 'c'):
                     plt.plot(dist_space_2, kde_2(dist_space_2), lw = 1.0, ls = '-', c= 'b')
                     plt.show()
                 if abs(peak_1 - peak_2) > threshold: 
+                    print iterations, "iterations"
                     print "Failed to converge"
+                    print "Peak 1: ", peak_1, "\nPeak 2: ", peak_2
+                    if 'dist_space_1' in locals():
+                        plt.plot(dist_space_1, kde_1(dist_space_1), lw = 1.0, ls = '-', c= 'k')
+                        plt.plot(dist_space_2, kde_2(dist_space_2), lw = 1.0, ls = '-', c= 'b')
+                        plt.show()
                         
             elif mode == 'fixed' or mode == 'f':
-                for kk in range(n):
-                    if time.time() > time_end:
-                        print "Timed out in second loop"
+                if time_out == True:
                         break
-                    start = time.time()
+                for kk in range(n):
+                    if time.clock() > time_end:
+                        print "Timed out in second loop"
+                        time_out = True
+                        break
+                    start = time.clock()
                     base.sendto(str(ii), nodes[ii])
-                    while time.time() < end:
+                    while time.clock() < end:
                         try:
                             new_response, new_address = base.recvfrom(1)
                         except:
@@ -170,7 +184,7 @@ def positioning_sequence_base(address, port, mode = 'c'):
                             iterations = iterations + 1
                             if iterations % 100 == 0:
                                 print iterations, '\r',
-                            flight_times_1[kk][ii] = time.time()-start
+                            flight_times_1[kk][ii] = time.clock()-start
                             break
                 if len(flight_times_1) > 0 and len(flight_times_1[0][:]) > 0:
                     for mm in range(len(flight_times_1)):
@@ -206,6 +220,10 @@ def positioning_sequence_base(address, port, mode = 'c'):
                     fp.write('{0:1.12f}'.format(flight_times_2[ii][kk])+'\t')
                 fp.write('\n')
 
+#        with open("peaks.txt", 'a') as fp:
+#            fp.write("Peak 1: "+str(peak_1)+'\n')
+#            fp.write("Peak 2: "+str(peak_2)+'\n\n') 
+                
     if len(nodes) > 0:
         base.sendto('begin', nodes[0])
         print "Sending Begin"
@@ -213,9 +231,9 @@ def positioning_sequence_base(address, port, mode = 'c'):
         print "Failed to begin. Zero nodes connected"
 
     if len(nodes) > 0:
-        start = time.time()
+        start = time.clock()
         end = start + 5
-        while time.time() < end:
+        while time.clock() < end:
             try:
                 new_response, new_address = base.recvfrom(1024)
             except:
@@ -229,9 +247,9 @@ def positioning_sequence_base(address, port, mode = 'c'):
                     edge_1 = list()
                     edge_2 = list()
                     edge_3 = list()
-                    start = time.time()
+                    start = time.clock()
                     end = start + 5
-                    while time.time() < end:
+                    while time.clock() < end:
                         try:
                             data, address = base.recvfrom(1024)
                         except:
@@ -269,10 +287,29 @@ def positioning_sequence_base(address, port, mode = 'c'):
                     
 
     print "Complete"
-    print '{0:1.12f}'.format(time.time() - program_start), "seconds elapsed"
+    print '{0:1.12f}'.format(time.clock() - program_start), "seconds elapsed"
     base.close()
     
-positioning_sequence_base('192.168.137.1', 3010, mode = 'c')
+new_mode = ''
+run_address = raw_input("Enter ip address: ")
+run_mode = raw_input("Enter mode: ")
+while True:
+    if run_mode == 'f' or run_mode == 'c' or run_mode == 'fixed' or run_mode == 'converging':
+        print run_mode
+        positioning_sequence_base(run_address, 3010, mode = run_mode)
+        break
+    elif run_mode == 'quit' or run_mode == 'q':
+        break
+    else:
+        run_mode = raw_input()
+        for ii in range(len(run_mode)):
+            if ord(run_mode[ii]) < 91 and ord(run_mode[ii]) > 64:
+                new_mode = new_mode+chr(ord(run_mode[ii])+32)
+            elif ord(run_mode[ii]) < 123 and ord(run_mode[ii]) > 96:
+                new_mode = new_mode+chr(ord(run_mode[ii]))
+        run_mode = new_mode
+        new_mode = ''
+                
 
 '''
 ```
