@@ -4,14 +4,14 @@
 import socket
 import time
 import numpy as np
-import netifaces
 from scipy.stats.kde import gaussian_kde
 import matplotlib.pyplot as plt
 from sys import argv
 
 def positioning_sequence_base(address, port, mode = 'c'):
     timeout = 10
-
+    writing = False
+        
     program_start = time.clock()
 
     print 'Base: \t', address
@@ -65,8 +65,12 @@ def positioning_sequence_base(address, port, mode = 'c'):
     peak_2 = 1        
     flag = 1
     time_end = time.clock() + 60
-    threshold = 0.001
-    n = 1000
+    if mode == "c" or mode == "converging" or mode == "f" or mode == "fixed":
+        threshold = 0.0001
+        n = 1000
+    else:
+        threshold = 1
+        n = 2
     time_out = False
     flight_times_1 = np.zeros((n*10,len(nodes)))
     flight_times_2 = np.zeros((n*10,len(nodes)))
@@ -165,7 +169,7 @@ def positioning_sequence_base(address, port, mode = 'c'):
                         plt.plot(dist_space_2, kde_2(dist_space_2), lw = 1.0, ls = '-', c= 'b')
                         plt.show()
                         
-            elif mode == 'fixed' or mode == 'f':
+            elif mode == 'fixed' or mode == 'f' or mode == "single" or mode == "s":
                 if time_out == True:
                         break
                 for kk in range(n):
@@ -206,23 +210,24 @@ def positioning_sequence_base(address, port, mode = 'c'):
                 if 'dist_space_1' in locals():
                         print iterations, "iterations"
                         print "Peak 1: ", peak_1
-                        plt.plot(dist_space_1, kde_1(dist_space_1), lw = 1.0, ls = '-', c= 'k')
-                        plt.show()
-                    
-        with open("flight_times_1.txt", 'w') as fp:
-            for ii in range(len(flight_times_1)):
-                for kk in range(len(flight_times_1[0][:])):
-                    fp.write('{0:1.12f}'.format(flight_times_1[ii][kk])+'\t')
-                fp.write('\n')
-        with open("flight_times_2.txt", 'w') as fp:
-            for ii in range(len(flight_times_2)):
-                for kk in range(len(flight_times_2[0][:])):
-                    fp.write('{0:1.12f}'.format(flight_times_2[ii][kk])+'\t')
-                fp.write('\n')
+                        if mode != 's' and mode != 'single':
+                            plt.plot(dist_space_1, kde_1(dist_space_1), lw = 1.0, ls = '-', c= 'k')
+                            plt.show()
+        if writing == True:
+            with open("flight_times_1.txt", 'w') as fp:
+                for ii in range(len(flight_times_1)):
+                    for kk in range(len(flight_times_1[0][:])):
+                        fp.write('{0:1.12f}'.format(flight_times_1[ii][kk])+'\t')
+                    fp.write('\n')
+            with open("flight_times_2.txt", 'w') as fp:
+                for ii in range(len(flight_times_2)):
+                    for kk in range(len(flight_times_2[0][:])):
+                        fp.write('{0:1.12f}'.format(flight_times_2[ii][kk])+'\t')
+                    fp.write('\n')
 
-#        with open("peaks.txt", 'a') as fp:
-#            fp.write("Peak 1: "+str(peak_1)+'\n')
-#            fp.write("Peak 2: "+str(peak_2)+'\n\n') 
+            with open("peaks2.txt", 'a') as fp:
+                fp.write("Peak 1: "+str(peak_1)+'\n')
+                fp.write("Peak 2: "+str(peak_2)+'\n\n') 
                 
     if len(nodes) > 0:
         base.sendto('begin', nodes[0])
@@ -294,7 +299,7 @@ new_mode = ''
 run_address = raw_input("Enter ip address: ")
 run_mode = raw_input("Enter mode: ")
 while True:
-    if run_mode == 'f' or run_mode == 'c' or run_mode == 'fixed' or run_mode == 'converging':
+    if run_mode == 'f' or run_mode == 'c' or run_mode == 'fixed' or run_mode == 'converging' or run_mode == 's' or run_mode == 'single':
         print run_mode
         positioning_sequence_base(run_address, 3010, mode = run_mode)
         break

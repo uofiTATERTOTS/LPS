@@ -185,5 +185,5 @@ def positioning_sequence(base_address, base_port):
     print "Complete"
     node.close()
     
-positioning_sequence('192.168.137.1', 3010)
+positioning_sequence('192.168.1.3', 3010)
 
